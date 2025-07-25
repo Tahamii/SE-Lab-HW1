@@ -1,39 +1,32 @@
 name: Deploy Expo Web to GitHub Pages
 
 on:
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-node@v4
+      - name: Setup repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
-          node-version: '22'
-          
-      - run: npm install -g expo-cli
-      - run: npm install
-      - run: npx expo export --platform web
-      
-      - uses: actions/configure-pages@v5
-      
-      - uses: actions/upload-pages-artifact@v3
+          node-version: 22.x
+          cache: yarn
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
         with:
-          path: 'web-build'
-          
-      - uses: actions/deploy-pages@v4
-        id: deployment
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build app
+        run: eas build --non-interactive
